@@ -11,7 +11,7 @@ import java.util.Date;
 public class JwtUtil {
 
     private final String SECRET = "mysecretkeymysecretkeymysecretkey"; // use env variable in prod
-    private final long EXPIRATION = 1000 * 60 * 60; // 1 hour
+    private final long EXPIRATION = 1000 * 60 * 60* 24 * 30; // 1 months
 
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 

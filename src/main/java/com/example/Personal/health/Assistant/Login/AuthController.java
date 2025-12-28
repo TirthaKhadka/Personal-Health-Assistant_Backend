@@ -5,23 +5,32 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
-
     @PostMapping("/register")
     public AuthResponse register(@RequestBody RegisterRequest request) {
-        String token = authService.register(request);
-        return new AuthResponse(token);
+        return new AuthResponse(authService.register(request));
     }
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return new AuthResponse(token);
+        return new AuthResponse(authService.login(request));
+    }
+
+    // New API to get logged-in user
+    private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+
+    @GetMapping("/me")
+    public User getLoggedInUser(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7); // Remove "Bearer "
+        String email = jwtUtil.extractEmail(token);
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

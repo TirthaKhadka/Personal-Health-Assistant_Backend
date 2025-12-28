@@ -1,6 +1,5 @@
 package com.example.Personal.health.Assistant.Login;
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,12 +20,13 @@ public class User {
     private String name;
 
     @Email
-    @Column(name = "UserData")
+    @NotBlank
+    @Column(name = "email")  // renamed from UserData to email
     private String email;
 
     @NotBlank
     private String password;
 
     @NotBlank
-    private String phonenumber;
+    private String phonenumber; // keep this column as it is
 }
