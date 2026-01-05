@@ -1,7 +1,11 @@
 package com.example.Personal.health.Assistant.Login;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -10,27 +14,46 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
-    @PostMapping("/register")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
-        return new AuthResponse(authService.register(request));
-    }
-
-    @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
-        return new AuthResponse(authService.login(request));
-    }
-
-    // New API to get logged-in user
-    private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
+    // ================= REGISTER =================
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            String token = authService.register(request);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ================= LOGIN =================
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            UserTokenResponse response = authService.login(request);
+            return ResponseEntity.ok(response); // returns JSON { "token": "...", "user": {...} }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ================= GET LOGGED-IN USER =================
     @GetMapping("/me")
-    public User getLoggedInUser(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7); // Remove "Bearer "
-        String email = jwtUtil.extractEmail(token);
+    public ResponseEntity<?> getLoggedInUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.substring(7); // remove "Bearer "
+            String email = jwtUtil.extractEmail(token);
 
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
     }
 }
