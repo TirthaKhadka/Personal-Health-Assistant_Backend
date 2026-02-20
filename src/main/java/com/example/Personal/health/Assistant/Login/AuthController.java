@@ -56,4 +56,44 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
+    // ================= UPDATE PROFILE =================
+    @PutMapping("/update-profile")
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request) {
+        try {
+
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            user.setName(request.getName());
+            user.setPhonenumber(request.getPhonenumber());
+
+            userRepository.save(user);
+
+            return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    // ================= CHANGE PASSWORD =================
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody ChangePasswordRequest request) {
+        try {
+            // Extract email from JWT
+            String token = authHeader.substring(7); // remove "Bearer "
+            String email = jwtUtil.extractEmail(token);
+
+            authService.changePassword(email, request);
+
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+    }
+
 }

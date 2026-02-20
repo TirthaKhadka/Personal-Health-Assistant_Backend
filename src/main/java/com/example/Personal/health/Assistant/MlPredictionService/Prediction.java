@@ -1,6 +1,7 @@
 package com.example.Personal.health.Assistant.MlPredictionService;
 
 import com.example.Personal.health.Assistant.Login.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public class Prediction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(name = "disease_name")
