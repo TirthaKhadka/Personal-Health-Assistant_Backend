@@ -1,6 +1,7 @@
 package com.example.Personal.health.Assistant.MlPredictionService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.Personal.health.Assistant.Login.User;
@@ -15,6 +16,7 @@ import java.util.List;
 public class PredictionController {
 
     private final MlPredictionService mlPredictionService;
+    private final PredictionRepository predictionRepository;
     private final UserRepository userRepository;
 
     /* ===================== PREDICT ===================== */
@@ -81,5 +83,33 @@ public class PredictionController {
             return ResponseEntity.status(500)
                     .body("History Fetch Error: " + e.getMessage());
         }
+    }
+    @DeleteMapping("/history/{userId}/{historyId}")
+    public ResponseEntity<?> deleteHistory(
+            @PathVariable Long userId,
+            @PathVariable Long historyId) {
+
+        Prediction prediction = predictionRepository.findById(historyId)
+                .orElseThrow(() -> new RuntimeException("History not found"));
+
+        if (!prediction.getUser().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Unauthorized delete attempt");
+        }
+
+        predictionRepository.delete(prediction);
+
+        return ResponseEntity.ok("Deleted successfully");
+    }
+    // ================= DELETE ALL HISTORY OF USER =================
+    @DeleteMapping("/history/user/{userId}")
+    public ResponseEntity<?> deleteAllHistory(@PathVariable Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Prediction> history = predictionRepository.findByUserOrderByPredictedAtDesc(user);
+        predictionRepository.deleteAll(history);
+
+        return ResponseEntity.ok("All history deleted successfully");
     }
 }
