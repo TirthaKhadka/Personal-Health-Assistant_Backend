@@ -34,7 +34,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            UserTokenResponse response = authService.login(request);
+            AuthResponse response = authService.login(request);
             return ResponseEntity.ok(response); // returns JSON { "token": "...", "user": {...} }
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
@@ -95,6 +95,51 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
     }
+    @PostMapping("/generate-otp")
+    public ResponseEntity<?> generateOtp(@RequestBody GenerateOtpRequest request) {
+        try {
+            System.out.println("Generating OTP for userId: " + request.getUserId());
+            authService.generateOtp(request.getUserId());
+            return ResponseEntity.ok().body(Map.of("message", "OTP generated and sent"));
 
+        } catch (Exception e) {
+            System.out.println("Generate OTP error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        try {
+            Long userId = request.getUserId();
+            String token = authService.verifyOtp(userId, request.getOtp());
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            AuthResponse response = AuthResponse.builder()
+                    .token(token)
+                    .requires2FA(false)
+                    .userId(user.getId())
+                    .method("email")  // or phone if using SMS
+                    .contact(user.getEmail())
+                    .build();
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.out.println("Verify OTP error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Test endpoint for debugging
+    @GetMapping("/test")
+    public ResponseEntity<?> test() {
+        return ResponseEntity.ok(Map.of(
+                "status", "Server is running",
+                "timestamp", System.currentTimeMillis()
+        ));
+    }
 
 }
